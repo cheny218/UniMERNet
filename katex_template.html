@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 16px;
+      background-color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 120px;
+    }
+    #math-output {
+      font-size: 1.3em;
+      color: #111;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+    .placeholder {
+      color: #999;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div id="math-output"><span class="placeholder">公式实时渲染预览区域</span></div>
+  <script>
+    function renderFormula(latex) {
+      const container = document.getElementById('math-output');
+      if (!latex || latex.trim() === '') {
+        container.innerHTML = '<span class="placeholder">公式实时渲染预览区域</span>';
+        return;
+      }
+      try {
+        katex.render(latex, container, {
+          throwOnError: false,
+          displayMode: true
+        });
+      } catch (err) {
+        container.innerHTML = '<span style="color:#d32f2f;">渲染错误: ' + err.message + '</span>';
+      }
+    }
+  </script>
+</body>
+</html>
