@@ -1,9 +1,10 @@
 import os
 import sys
+import argparse
 import torch
 from PIL import Image
 
-# 探测上层目录路径
+# 确保路径解析正确
 base_dir = os.path.dirname(os.path.abspath(__file__))
 if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
@@ -17,21 +18,24 @@ class UniMERNetEngine:
     def __init__(self, cfg_path: str = None, model_path: str = None, device: str = None):
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         
-        # 默认寻找 configs/demo.yaml
-        if cfg_path is None:
-            cfg_path = os.path.join(base_dir, "configs", "demo.yaml")
-        
-        self.cfg_path = cfg_path
+        # 自动定位 demo.yaml 配置文件
+        possible_cfg_paths = [
+            cfg_path,
+            os.path.join(base_dir, "configs", "demo.yaml"),
+            os.path.join(base_dir, "_internal", "configs", "demo.yaml"),
+            os.path.join(base_dir, "..", "configs", "demo.yaml"),
+        ]
+        self.cfg_path = next((p for p in possible_cfg_paths if p and os.path.exists(p)), "configs/demo.yaml")
         self.model_path = model_path
         self.model = None
         self.vis_processor = None
         self._load_model()
 
     def _load_model(self):
-        if not os.path.exists(self.cfg_path):
-            raise FileNotFoundError(f"未找到配置文件：{self.cfg_path}")
+        # 采用 UniMERNet 官方标准的配置加载方式
+        args = argparse.Namespace(cfg_path=self.cfg_path, options=None)
+        cfg = Config(args)
 
-        cfg = Config.from_file(self.cfg_path)
         if self.model_path and os.path.exists(self.model_path):
             cfg.config.model.pretrained = self.model_path
 
