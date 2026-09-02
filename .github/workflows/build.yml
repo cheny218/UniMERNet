@@ -1,32 +1,39 @@
 name: Build Windows Desktop App
 
 on:
-  workflow_dispatch: # 支持网页端手动一键触发
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: windows-latest
+    env:
+      PYTHONUTF8: 1
+      PYTHONIOENCODING: utf-8
 
     steps:
     - name: 检出源码
       uses: actions/checkout@v4
 
-    - name: 配置 Python 环境
+    - name: 设置 Python 3.10
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
-    - name: 安装打包与运行依赖
+    - name: 安装依赖
       run: |
         python -m pip install --upgrade pip
         pip install PySide6 pillow torch torchvision timm albumentations transformers pyinstaller
         pip install -e .
 
-    - name: 运行自动打包脚本
+    - name: 预设配置文件环境
+      run: |
+        python -c "import os; os.makedirs('unimernet/configs', exist_ok=True); open('unimernet/configs/default.yaml', 'w').write('env:\n  cache_root: cache\n  repo_root: .\n  library_root: .\n')"
+
+    - name: 运行打包
       run: |
         python build_exe.py
 
-    - name: 上传构建产物 (EXE 安装包)
+    - name: 上传完整免安装软件包
       uses: actions/upload-artifact@v4
       with:
         name: UniMERNet-Windows-Portable
