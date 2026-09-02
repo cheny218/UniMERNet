@@ -1,4 +1,4 @@
-name: Build Windows Desktop App
+name: Build Turnkey Windows App
 
 on:
   workflow_dispatch:
@@ -7,34 +7,68 @@ jobs:
   build:
     runs-on: windows-latest
     env:
-      PYTHONUTF8: 1
-      PYTHONIOENCODING: utf-8
+      PYTHONUTF8: "1"
+      PYTHONIOENCODING: "utf-8"
 
     steps:
     - name: 检出源码
       uses: actions/checkout@v4
 
-    - name: 设置 Python 3.10
+    - name: 配置 Python 环境
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
-    - name: 安装依赖
+    - name: 安装 Python 依赖
+      shell: bash
       run: |
         python -m pip install --upgrade pip
         pip install PySide6 pillow torch torchvision timm albumentations transformers pyinstaller
         pip install -e .
 
-    - name: 预设配置文件环境
+    - name: 云端自动下载 1.3GB 官方模型权重
+      shell: bash
       run: |
-        python -c "import os; os.makedirs('unimernet/configs', exist_ok=True); open('unimernet/configs/default.yaml', 'w').write('env:\n  cache_root: cache\n  repo_root: .\n  library_root: .\n')"
+        mkdir -p models
+        # 从 HuggingFace 极速克隆官方权重
+        git clone https://huggingface.co/wanderkid/unimernet_base models/unimernet_base
+        # 兼容权重命名
+        if [ -f "models/unimernet_base/pytorch_model.pth" ] && [ ! -f "models/unimernet_base/unimernet_base.pth" ]; then
+          cp models/unimernet_base/pytorch_model.pth models/unimernet_base/unimernet_base.pth
+        fi
 
-    - name: 运行打包
+    - name: 自动补齐所有底层配置文件
+      shell: bash
+      run: |
+        # 1. 自动补全 default.yaml（含 env 配置）
+        mkdir -p unimernet/configs
+        cat << 'EOF' > unimernet/configs/default.yaml
+        env:
+          cache_root: "cache"
+          repo_root: "."
+          library_root: "."
+        EOF
+
+        # 2. 自动补全 unimernet_base.yaml
+        mkdir -p unimernet/configs/models
+        cp configs/demo.yaml unimernet/configs/models/unimernet_base.yaml
+
+    - name: 运行打包生成 EXE
+      shell: bash
       run: |
         python build_exe.py
 
-    - name: 上传完整免安装软件包
+    - name: 自动组装开箱即用免安装包
+      shell: bash
+      run: |
+        # 将下载好的完整模型直接放入软件根目录
+        cp -r models dist/UniMERNet-Snip/models
+        # 将所有补齐的配置文件完整装入内部目录
+        mkdir -p dist/UniMERNet-Snip/_internal/unimernet/configs
+        cp -r unimernet/configs/* dist/UniMERNet-Snip/_internal/unimernet/configs/
+
+    - name: 上传开箱即用软件包 (解压即用)
       uses: actions/upload-artifact@v4
       with:
-        name: UniMERNet-Windows-Portable
-        path: dist/
+        name: UniMERNet-Snip-ReadyToUse
+        path: dist/UniMERNet-Snip
