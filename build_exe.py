@@ -2,7 +2,7 @@ import os
 import sys
 import subprocess
 
-# 强制开启 UTF-8 编码支持
+# 解决 Windows 终端编码问题
 if sys.platform.startswith('win'):
     try:
         sys.stdout.reconfigure(encoding='utf-8')
@@ -22,12 +22,13 @@ def build():
         "--clean",
         f"--add-data=katex_template.html{sep}.",
         f"--add-data=configs{sep}configs",
+        "--collect-all=unimernet",
+        "--collect-data=timm",
+        "--collect-data=transformers",
         "--hidden-import=PySide6.QtWebEngineWidgets",
         "--hidden-import=PySide6.QtWebEngineCore",
         "--hidden-import=torch",
         "--hidden-import=torchvision",
-        "--hidden-import=timm",
-        "--hidden-import=albumentations",
         "app.py"
     ]
     
